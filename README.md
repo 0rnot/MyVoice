@@ -456,4 +456,3 @@ print('Config available:', 'config' in model)
 - **テスト・調整**: 2-4時間
 
 **合計**: 2-3日の作業（いいGPU買え）
-# Test update Mon Jul 28 20:05:56 JST 2025
