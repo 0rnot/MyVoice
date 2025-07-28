@@ -83,115 +83,228 @@ COEIROINKで俺の声を使う手順↓
 ### 必要な環境
 - **OS**: Ubuntu 20.04 LTS または Windows 10/11（WSL2推奨）
 - **Python**: 3.8以上
-- **GPU**: NVIDIA GPU（VRAM 8GB以上推奨）
-- **ストレージ**: 20GB以上の空き容量
+- **GPU**: NVIDIA GPU（**VRAM 12GB以上必須、Tensorコア搭載**）
+- **ストレージ**: 50GB以上の空き容量
+- **メモリ**: 32GB以上推奨
 
-### 環境構築
+### 詳細な環境構築手順
 
-1. **Anacondaのインストール**
+1. **ESPnetリポジトリのクローン**
    ```bash
-   wget https://repo.anaconda.com/archive/Anaconda3-2023.03-Linux-x86_64.sh
-   bash Anaconda3-2023.03-Linux-x86_64.sh
-   source ~/.bashrc
+   git clone https://github.com/espnet/espnet
+   cd espnet
+   pip install -e .
    ```
 
-2. **仮想環境の作成**
+2. **CUDAとPyTorchの確認**
    ```bash
-   conda create -n coeiroink python=3.8
-   conda activate coeiroink
-   ```
-
-3. **必要なライブラリのインストール**
-   ```bash
-   # PyTorch（CUDA対応版）
+   # CUDA Version確認
+   nvidia-smi
+   
+   # PyTorch CUDA対応版インストール（CUDA 11.8の場合）
    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
    
-   # ESPnet2
-   pip install espnet
+   # 動作確認
+   python -c "import torch; print(torch.cuda.is_available())"
+   ```
+
+3. **COEIROINKレシピディレクトリの準備**
+   ```bash
+   # ESPnetのCOEIROINKレシピディレクトリに移動
+   cd espnet/egs2/mycoe/tts1
    
-   # その他の依存関係
-   pip install librosa soundfile jaconv pyopenjtalk unidic-lite
+   # 環境設定
+   . ./path.sh
+   
+   # 必要な追加ライブラリのインストール
+   pip install jaconv pyopenjtalk unidic-lite mecab-python3
+   pip install librosa soundfile scipy
+   pip install parallel-wavegan  # HiFi-GAN用
    ```
 
-### データ準備
-
-1. **音声データの準備**
-   - 高品質な音声ファイル（WAV、48kHz、16bit推奨）
-   - 100～500ファイル(1ファイル8秒くらい)の音声データを用意(サンプルは多ければ多いほどいい)
-   - ノイズを除去
-
-2. **テキストデータの準備**
-   - 音声に対応するテキストファイルを作成
-   - 読み方が統一されていることを確認
-
-3. **ディレクトリ構造の作成**
-   ```
-   work_dir/
-   ├── raw_data/
-   │   ├── wav/
-   │   │   ├── sample001.wav
-   │   │   └── sample002.wav
-   │   └── text
-   └── dump/
-   ```
-
-### 学習プロセス
-
-1. **データの前処理**
+4. **日本語言語モデルの準備**
    ```bash
-   # 音声ファイルの変換（44.1kHz, モノラル）
-   python scripts/audio_convert.py \
-     --input_dir raw_data/wav \
-     --output_dir dump/44k/raw \
-     --sample_rate 44100
+   # MeCab辞書のダウンロード
+   python -m unidic download
+   
+   # pyopenjtalkの辞書確認
+   python -c "import pyopenjtalk; pyopenjtalk.g2p('これはテストです')"
    ```
 
-2. **音素の抽出**
+### データ準備（超重要）
+
+1. **音声収録の準備**
    ```bash
-   # テキストから音素への変換
-   python scripts/make_phoneme.py \
-     --text_file raw_data/text \
-     --output_dir dump/44k/raw
+   # 収録用ディレクトリ作成
+   mkdir -p ~/mycoe_work/raw_audio
+   cd ~/mycoe_work/raw_audio
    ```
 
-3. **特徴量の抽出**
-   ```bash
-   # スペクトログラムの計算
-   espnet2-tts-preprocess \
-     --train_data_path_and_name_and_type dump/44k/raw/tr_no_dev/wav.scp,speech,sound \
-     --train_data_path_and_name_and_type dump/44k/raw/tr_no_dev/text,text,text \
-     --valid_data_path_and_name_and_type dump/44k/raw/dev/wav.scp,speech,sound \
-     --valid_data_path_and_name_and_type dump/44k/raw/dev/text,text,text \
-     --output_dir exp/tts_stats_raw_linear_spectrogram
+2. **音声データの詳細仕様**
+   - **フォーマット**: WAV、44.1kHz、16bit、モノラル
+   - **ファイル数**: 100〜500ファイル（最低50分、推奨60分以上）
+   - **1ファイルあたり**: 5〜15秒（8秒程度が理想）
+   - **内容**: 感情の起伏が多様な文章を読む
+   - **品質**: 無音部分、ノイズ、リバーブを徹底的に除去
+
+3. **音声ファイルの命名規則**
+   ```
+   MYCOE001.wav  # 通し番号で命名
+   MYCOE002.wav
+   MYCOE003.wav
+   ...
+   MYCOE500.wav
    ```
 
-4. **モデルの学習**
+4. **テキストファイルの作成**
    ```bash
-   espnet2-tts-train \
-     --config conf/tuning/finetune_vits.yaml \
-     --train_data_path_and_name_and_type dump/44k/raw/tr_no_dev/text,text,text \
-     --train_data_path_and_name_and_type dump/44k/raw/tr_no_dev/wav.scp,speech,sound \
-     --valid_data_path_and_name_and_type dump/44k/raw/dev/text,text,text \
-     --valid_data_path_and_name_and_type dump/44k/raw/dev/wav.scp,speech,sound \
-     --output_dir exp/tts_mycoe_model \
+   # transcript.txtを作成（タブ区切り）
+   # ファイル名<TAB>読み上げテキスト
+   MYCOE001	こんにちは、今日はいい天気ですね。
+   MYCOE002	音声合成の学習用データを作成しています。
+   MYCOE003	この音声モデルは高品質な合成音声を生成します。
+   ```
+
+5. **ESPnet用データ構造の構築**
+   ```bash
+   cd ~/mycoe_work
+   
+   # データディレクトリ構造を作成
+   mkdir -p data/{train,dev}
+   
+   # 音声ファイルリスト作成（wav.scp）
+   find raw_audio -name "*.wav" | head -400 | \
+   awk -F'/' '{printf "%s\t%s\n", $NF, $0}' | \
+   sed 's/.wav\t/\t/' > data/train/wav.scp
+   
+   find raw_audio -name "*.wav" | tail -100 | \
+   awk -F'/' '{printf "%s\t%s\n", $NF, $0}' | \
+   sed 's/.wav\t/\t/' > data/dev/wav.scp
+   
+   # テキストファイル作成
+   head -400 transcript.txt > data/train/text
+   tail -100 transcript.txt > data/dev/text
+   
+   #話者IDファイル作成
+   awk '{print $1 " MYCOE"}' data/train/text > data/train/utt2spk
+   awk '{print $1 " MYCOE"}' data/dev/text > data/dev/utt2spk
+   
+   # 話者-発話対応ファイル作成
+   utils/utt2spk_to_spk2utt.pl data/train/utt2spk > data/train/spk2utt
+   utils/utt2spk_to_spk2utt.pl data/dev/utt2spk > data/dev/spk2utt
+   ```
+
+### 実際の学習実行手順
+
+1. **ESPnetレシピの実行準備**
+   ```bash
+   cd espnet/egs2/mycoe/tts1
+   
+   # データを適切な場所にコピー
+   cp -r ~/mycoe_work/data ./
+   
+   # 設定ファイルの確認
+   ls conf/tuning/  # finetune_vits.yamlがあることを確認
+   ```
+
+2. **学習設定ファイル（conf/tuning/finetune_vits.yaml）のカスタマイズ**
+   ```yaml
+   # 重要なパラメータの例
+   batch_bins: 2000000    # バッチサイズ（VRAM使用量に影響）
+   accum_grad: 1          # 勾配蓄積回数
+   max_epoch: 100         # エポック数
+   patience: 10           # 早期停止の設定
+   
+   # VITS固有の設定
+   tts_conf:
+     generator_params:
+       hidden_channels: 192
+       segment_size: 32
+       text_encoder_attention_heads: 2
+     
+   # 最適化設定
+   optim: adamw
+   optim_conf:
+     lr: 0.0002          # 学習率
+     betas: [0.8, 0.99]
+     eps: 1.0e-09
+     weight_decay: 0.01
+   ```
+
+3. **段階的学習実行（run.shの詳細）**
+   ```bash
+   # Stage 1-2: データ形式変換とフィルタリング
+   ./run.sh --stage 1 --stop_stage 2 \
      --ngpu 1 \
-     --max_epoch 100
+     --fs 44100 \
+     --n_fft 2048 \
+     --n_shift 512 \
+     --dumpdir dump/44k
+   
+   # Stage 3: 統計情報の計算
+   ./run.sh --stage 3 --stop_stage 3 \
+     --ngpu 1 \
+     --train_config conf/tuning/finetune_vits.yaml
+   
+   # Stage 4-5: モデル学習（最重要）
+   ./run.sh --stage 4 --stop_stage 5 \
+     --ngpu 1 \
+     --train_config conf/tuning/finetune_vits.yaml \
+     --tag "mycoe_vits_$(date +%Y%m%d)" \
+     --tts_exp exp/tts_train_mycoe
    ```
 
-### COEIROINK用ファイルの準備
-
-1. **UUIDの生成**
-   ```python
-   import uuid
-   speaker_uuid = str(uuid.uuid4())
-   print(speaker_uuid)  # 例: b220da3c-4c23-11f0-99ea-0242ac1c000c
+4. **学習監視用コマンド**
+   ```bash
+   # TensorBoard起動（別ターミナル）
+   tensorboard --logdir exp/tts_train_mycoe --port 6006
+   
+   # 学習ログの確認
+   tail -f exp/tts_train_mycoe/train.log
+   
+   # GPU使用状況の監視
+   watch -n 1 nvidia-smi
    ```
 
-2. **metas.jsonの作成**
-   ```json
+5. **学習完了後の推論テスト**
+   ```bash
+   # Stage 6: 推論実行
+   ./run.sh --stage 6 --stop_stage 6 \
+     --ngpu 1 \
+     --tts_exp exp/tts_train_mycoe \
+     --inference_model "100epoch.pth"
+   
+   # テスト用音声生成
+   echo "こんにちは、音声合成のテストです。" | \
+   espnet2-tts-inference \
+     --model_file exp/tts_train_mycoe/100epoch.pth \
+     --output_dir ./output_test
+   ```
+
+### COEIROINK用ファイルの準備（最終段階）
+
+1. **学習済みモデルの変換と配置**
+   ```bash
+   # 新しいUUIDを生成
+   NEW_UUID=$(python3 -c "import uuid; print(str(uuid.uuid4()))")
+   echo "Generated UUID: $NEW_UUID"
+   
+   # COEIROINK用ディレクトリ構造を作成
+   mkdir -p coeiroink_model/${NEW_UUID}/model/224757969
+   mkdir -p coeiroink_model/${NEW_UUID}/icons
+   mkdir -p coeiroink_model/${NEW_UUID}/voice_samples
+   
+   # 学習済みモデルをコピー
+   cp exp/tts_train_mycoe/100epoch.pth coeiroink_model/${NEW_UUID}/model/224757969/
+   cp exp/tts_train_mycoe/config.yaml coeiroink_model/${NEW_UUID}/model/224757969/
+   ```
+
+2. **メタデータファイル（metas.json）の作成**
+   ```bash
+   cat > coeiroink_model/${NEW_UUID}/metas.json << EOF
    {
        "speakerName": "MYCOEIROINK",
-       "speakerUuid": "生成したUUID",
+       "speakerUuid": "${NEW_UUID}",
        "styles": [
            {
                "styleName": "のーまる",
@@ -199,35 +312,168 @@ COEIROINKで俺の声を使う手順↓
            }
        ]
    }
+   EOF
    ```
 
-3. **ディレクトリ構造の構築**
+3. **ライセンスファイルの作成**
    ```bash
-   mkdir -p speaker_info/${speaker_uuid}/model/224757969
-   mkdir -p speaker_info/${speaker_uuid}/icons
-   mkdir -p speaker_info/${speaker_uuid}/voice_samples
+   cat > coeiroink_model/${NEW_UUID}/LICENSE.txt << EOF
+   Copyright (c) $(date +%Y) [あなたの名前]
+
+   # 利用規約・免責事項
+   こちらを必ずご確認の上、ご使用ください。
+   https://coeiroink.com/terms
+
+   以下の利用規約を守ってください
+   ・COEIROINKの禁止事項を破らないこと
+   ・クレジットをすること
+   　　・例）「COEIROINK:MYCOEIROINK」
+   EOF
    
-   # 学習済みモデルのコピー
-   cp exp/tts_mycoe_model/100epoch.pth speaker_info/${speaker_uuid}/model/224757969/
-   cp exp/tts_mycoe_model/config.yaml speaker_info/${speaker_uuid}/model/224757969/
+   # policy.mdも同様に作成
+   cp coeiroink_model/${NEW_UUID}/LICENSE.txt coeiroink_model/${NEW_UUID}/policy.md
    ```
 
-4. **その他のファイル**
-   - `LICENSE.txt`: ライセンス情報
-   - `policy.md`: 利用規約
-   - `portrait.png`: ポートレート画像（推奨サイズ: 512x512px）←デフォで良い
-   - `icons/224757969.png`: アイコン画像（推奨サイズ: 256x256px）←デフォで良い
-   - `voice_samples/`: サンプル音声ファイル
+4. **サンプル音声の生成**
+   ```bash
+   # テスト文章でサンプル音声を3つ生成
+   mkdir -p temp_samples
+   
+   echo "こんにちは、音声合成のテストです" | \
+   espnet2-tts-inference \
+     --model_file exp/tts_train_mycoe/100epoch.pth \
+     --output_dir temp_samples/sample1
+   
+   echo "これは俺の声を学習したモデルです" | \
+   espnet2-tts-inference \
+     --model_file exp/tts_train_mycoe/100epoch.pth \
+     --output_dir temp_samples/sample2
+   
+   echo "音質の確認用サンプル音声です" | \
+   espnet2-tts-inference \
+     --model_file exp/tts_train_mycoe/100epoch.pth \
+     --output_dir temp_samples/sample3
+   
+   # 生成された音声をリネームして配置
+   cp temp_samples/sample1/norm/speech.wav coeiroink_model/${NEW_UUID}/voice_samples/224757969_001.wav
+   cp temp_samples/sample2/norm/speech.wav coeiroink_model/${NEW_UUID}/voice_samples/224757969_002.wav
+   cp temp_samples/sample3/norm/speech.wav coeiroink_model/${NEW_UUID}/voice_samples/224757969_003.wav
+   ```
 
-### 学習のコツ
+5. **アイコンとポートレート画像の配置**
+   ```bash
+   # デフォルト画像をコピー（あるいは自分で作成した画像を配置）
+   # 256x256のアイコン画像
+   cp /path/to/your/icon.png coeiroink_model/${NEW_UUID}/icons/224757969.png
+   
+   # 512x512のポートレート画像
+   cp /path/to/your/portrait.png coeiroink_model/${NEW_UUID}/portrait.png
+   ```
 
-- **データ品質**: ノイズをできるだけ減らす(特にINとOUTのノイズ)
-- **データ量**: 最低30分、推奨60分以上の音声データ
-- **エポック数**: 過学習を避けるため、検証損失を監視しながら調整する
-- **ハードウェア**: GPUを使わないと無限の時間がかかる
+6. **最終的なパッケージング**
+   ```bash
+   # 完成したモデルをtar.gzで圧縮
+   tar -czf "MYCOEIROINK_${NEW_UUID}_$(date +%Y%m%d).tar.gz" coeiroink_model/${NEW_UUID}
+   
+   # ファイルサイズ確認
+   ls -lh MYCOEIROINK_${NEW_UUID}_$(date +%Y%m%d).tar.gz
+   
+   echo "完成！COEIROINKのspeaker_infoディレクトリに配置してください"
+   echo "UUID: ${NEW_UUID}"
+   ```
 
-### トラブルシューティング
+### 学習のコツと重要ポイント
 
-- **CUDA out of memory**: バッチサイズを減らす
-- **音質が悪い**: 学習データの品質確認、エポック数調整
-- **発音がおかしい**: 音素アライメントの確認
+- **データ品質が全て**: ノイズ除去を徹底的に（Audacityでスペクトログラム確認推奨）
+- **収録環境**: 反響の少ない部屋、マイクとの距離一定、背景ノイズゼロ
+- **データ量**: 最低50分、理想は90分以上（品質 > 量）
+- **エポック数**: validation lossがプラトーになったら早期停止（通常80-120エポック）
+- **ハードウェア**: RTX 3080以上推奨、VRAM不足なら batch_bins を半分に
+- **収録内容**: 日常会話、疑問文、感嘆文をバランスよく
+- **ピッチとトーン**: 普段の話し方を意識、感情を込めすぎない
+
+### 詳細なトラブルシューティング
+
+#### メモリ関連エラー
+```bash
+# CUDA out of memory
+# conf/tuning/finetune_vits.yaml の batch_bins を調整
+batch_bins: 1000000  # デフォルトから半分に
+
+# CPU memory不足
+# swap領域を増やす
+sudo fallocate -l 16G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+```
+
+#### 音質問題
+```bash
+# 学習途中の音声確認
+# Stage 6を実行して中間結果をチェック
+./run.sh --stage 6 --stop_stage 6 \
+  --tts_exp exp/tts_train_mycoe \
+  --inference_model "50epoch.pth"
+
+# スペクトログラム確認
+python -c "
+import librosa
+import matplotlib.pyplot as plt
+y, sr = librosa.load('生成された音声.wav')
+D = librosa.stft(y)
+plt.figure(figsize=(10, 4))
+librosa.display.specshow(librosa.amplitude_to_db(abs(D)), 
+                        y_axis='log', x_axis='time')
+plt.colorbar()
+plt.savefig('spectrogram.png')
+"
+```
+
+#### pyopenjtalk関連エラー
+```bash
+# 辞書が見つからない場合
+python -m unidic download
+export MECAB_PATH=/usr/lib/x86_64-linux-gnu/mecab/dic/mecab-ipadic-neologd
+
+# 音素変換テスト
+python -c "
+import pyopenjtalk
+text = 'これはテストです'
+phonemes = pyopenjtalk.g2p(text)
+print(f'Text: {text}')
+print(f'Phonemes: {phonemes}')
+"
+```
+
+#### 学習が進まない場合
+```bash
+# 学習率の調整
+# conf/tuning/finetune_vits.yaml
+optim_conf:
+  lr: 0.0001  # デフォルトより小さく
+
+# warmupステップの追加
+scheduler: warmuplr
+scheduler_conf:
+  warmup_steps: 4000
+```
+
+#### 推論時のエラー
+```bash
+# モデル互換性チェック
+python -c "
+import torch
+model = torch.load('exp/tts_train_mycoe/100epoch.pth')
+print('Model keys:', list(model.keys()))
+print('Config available:', 'config' in model)
+"
+```
+
+### 学習時間の目安
+- **データ準備**: 2-4時間（音声収録・編集含む）
+- **前処理**: 30分-1時間
+- **学習**: 12-24時間（RTX 3080で100エポック）
+- **テスト・調整**: 2-4時間
+
+**合計**: 2-3日の作業（GPUの性能による）
