@@ -28,7 +28,11 @@ b220da3c-4c23-11f0-99ea-0242ac1c000c/
 
 ## 使用方法
 
-このリポジトリには俺の声で学習させた音声合成モデルが入ってる。
+このリポジトリには俺の声で学習させた音声合成モデルの設定ファイルが入ってる。
+実際のモデルファイル（.pthファイル）と音声サンプルは容量が大きすぎるため、以下のリンクからダウンロードしてくれ。
+
+**モデルファイルダウンロード**: [MyVoice_MYCOEIROINK.tar.gz](./MyVoice_MYCOEIROINK.tar.gz) (約662MB)
+
 COEIROINKで俺の声を使いたい人は以下の手順でどうぞ。
 
 ### 1. COEIROINKのインストール
@@ -43,12 +47,17 @@ COEIROINKで俺の声を使いたい人は以下の手順でどうぞ。
    ```bash
    git clone https://github.com/0rnot/MyVoice.git
    ```
-2. `b220da3c-4c23-11f0-99ea-0242ac1c000c`フォルダをCOEIROINKのspeaker_infoディレクトリにぶち込む：
+2. 上記のモデルファイル（MyVoice_MYCOEIROINK.tar.gz）をダウンロードして展開
+   ```bash
+   tar -xzf MyVoice_MYCOEIROINK.tar.gz
+   ```
+3. 展開した`MyVoice_MYCOEIROINK`フォルダの名前を`b220da3c-4c23-11f0-99ea-0242ac1c000c`に変更
+4. そのフォルダをCOEIROINKのspeaker_infoディレクトリにぶち込む：
    ```
    [COEIROINKインストール先]/speaker_info/b220da3c-4c23-11f0-99ea-0242ac1c000c/
    ```
-3. COEIROINKを再起動
-4. 音声選択に「MYCOEIROINK」が追加されてるはず
+5. COEIROINKを再起動
+6. 音声選択に「MYCOEIROINK」が追加されてるはず
 
 ### 3. 俺の声で音声合成
 
@@ -60,7 +69,7 @@ COEIROINKで俺の声を使いたい人は以下の手順でどうぞ。
 
 ## 音声サンプル
 
-`voice_samples/`フォルダに俺の声のサンプルが入ってるから、導入前に品質確認してみてくれ。
+ダウンロードしたファイルの`voice_samples/`フォルダに俺の声のサンプルが入ってるから、導入前に品質確認してみてくれ。
 
 ## ライセンス・利用規約
 
