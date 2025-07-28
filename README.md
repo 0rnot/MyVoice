@@ -26,7 +26,7 @@ b220da3c-4c23-11f0-99ea-0242ac1c000c/
 
 声帯の潰れた俺へ
 このリポジトリには俺の声で学習させた音声合成モデルの設定ファイルが入ってる
-モデルファイル（.pthファイル）と音声サンプルは容量が大きすぎるから、以下のリンクからダウンロードしろ
+モデルファイル（.pthファイル）と音声サンプルは容量が大きすぎるから、以下のリンクからダウンロードして
 
 **モデルファイルダウンロード**: [MyVoice_MYCOEIROINK.tar.gz](./MyVoice_MYCOEIROINK.tar.gz) (約662MB)
 
@@ -83,8 +83,8 @@ COEIROINKで俺の声を使う手順↓
 ### 必要な環境
 - **OS**: Ubuntu 20.04 LTS または Windows 10/11（WSL2推奨）
 - **Python**: 3.8以上
-- **GPU**: NVIDIA GPU（**VRAM 12GB以上必須、Tensorコア搭載**）
-- **ストレージ**: 50GB以上の空き容量
+- **GPU**: NVIDIA GPU（**VRAM 8GB以上推奨、Tensorコア搭載**）
+- **ストレージ**: 20GB以上の空き容量
 - **メモリ**: 32GB以上推奨
 
 ### 詳細な環境構築手順
@@ -144,7 +144,7 @@ COEIROINKで俺の声を使う手順↓
    - **フォーマット**: WAV、44.1kHz、16bit、モノラル
    - **ファイル数**: 100〜500ファイル（最低50分、推奨60分以上）
    - **1ファイルあたり**: 5〜15秒（8秒程度が理想）
-   - **内容**: 感情の起伏が多様な文章を読む
+   - **内容**: 感情の起伏が多様な文章を読む(語り口調になりすぎると変になる)
    - **品質**: 無音部分、ノイズ、リバーブを徹底的に除去
 
 3. **音声ファイルの命名規則**
@@ -156,7 +156,7 @@ COEIROINKで俺の声を使う手順↓
    MYCOE500.wav
    ```
 
-4. **テキストファイルの作成**
+4. **テキストファイルの作成(例)**
    ```bash
    # transcript.txtを作成（タブ区切り）
    # ファイル名<TAB>読み上げテキスト
@@ -209,8 +209,8 @@ COEIROINKで俺の声を使う手順↓
 
 2. **学習設定ファイル（conf/tuning/finetune_vits.yaml）のカスタマイズ**
    ```yaml
-   # 重要なパラメータの例
-   batch_bins: 2000000    # バッチサイズ（VRAM使用量に影響）
+   # 重要なパラメータ
+   batch_bins: 2000000    # バッチサイズ（VRAM使用量に影響するから適宜変更）
    accum_grad: 1          # 勾配蓄積回数
    max_epoch: 100         # エポック数
    patience: 10           # 早期停止の設定
@@ -225,7 +225,7 @@ COEIROINKで俺の声を使う手順↓
    # 最適化設定
    optim: adamw
    optim_conf:
-     lr: 0.0002          # 学習率
+     lr: 0.0002          # 学習率(ここ大事)
      betas: [0.8, 0.99]
      eps: 1.0e-09
      weight_decay: 0.01
@@ -246,7 +246,7 @@ COEIROINKで俺の声を使う手順↓
      --ngpu 1 \
      --train_config conf/tuning/finetune_vits.yaml
    
-   # Stage 4-5: モデル学習（最重要）
+   # Stage 4-5: モデル学習（最重要！！）
    ./run.sh --stage 4 --stop_stage 5 \
      --ngpu 1 \
      --train_config conf/tuning/finetune_vits.yaml \
@@ -315,26 +315,7 @@ COEIROINKで俺の声を使う手順↓
    EOF
    ```
 
-3. **ライセンスファイルの作成**
-   ```bash
-   cat > coeiroink_model/${NEW_UUID}/LICENSE.txt << EOF
-   Copyright (c) $(date +%Y) [あなたの名前]
-
-   # 利用規約・免責事項
-   こちらを必ずご確認の上、ご使用ください。
-   https://coeiroink.com/terms
-
-   以下の利用規約を守ってください
-   ・COEIROINKの禁止事項を破らないこと
-   ・クレジットをすること
-   　　・例）「COEIROINK:MYCOEIROINK」
-   EOF
-   
-   # policy.mdも同様に作成
-   cp coeiroink_model/${NEW_UUID}/LICENSE.txt coeiroink_model/${NEW_UUID}/policy.md
-   ```
-
-4. **サンプル音声の生成**
+3. **サンプル音声の生成**
    ```bash
    # テスト文章でサンプル音声を3つ生成
    mkdir -p temp_samples
@@ -360,9 +341,9 @@ COEIROINKで俺の声を使う手順↓
    cp temp_samples/sample3/norm/speech.wav coeiroink_model/${NEW_UUID}/voice_samples/224757969_003.wav
    ```
 
-5. **アイコンとポートレート画像の配置**
+4. **アイコンとポートレート画像の配置**
    ```bash
-   # デフォルト画像をコピー（あるいは自分で作成した画像を配置）
+   # デフォルト画像をコピー
    # 256x256のアイコン画像
    cp /path/to/your/icon.png coeiroink_model/${NEW_UUID}/icons/224757969.png
    
@@ -370,7 +351,7 @@ COEIROINKで俺の声を使う手順↓
    cp /path/to/your/portrait.png coeiroink_model/${NEW_UUID}/portrait.png
    ```
 
-6. **最終的なパッケージング**
+5. **最終的なパッケージング**
    ```bash
    # 完成したモデルをtar.gzで圧縮
    tar -czf "MYCOEIROINK_${NEW_UUID}_$(date +%Y%m%d).tar.gz" coeiroink_model/${NEW_UUID}
@@ -378,7 +359,7 @@ COEIROINKで俺の声を使う手順↓
    # ファイルサイズ確認
    ls -lh MYCOEIROINK_${NEW_UUID}_$(date +%Y%m%d).tar.gz
    
-   echo "完成！COEIROINKのspeaker_infoディレクトリに配置してください"
+   echo "完成しました＾＾COEIROINKのspeaker_infoディレクトリに配置して"
    echo "UUID: ${NEW_UUID}"
    ```
 
@@ -386,9 +367,9 @@ COEIROINKで俺の声を使う手順↓
 
 - **データ品質が全て**: ノイズ除去を徹底的に（Audacityでスペクトログラム確認推奨）
 - **収録環境**: 反響の少ない部屋、マイクとの距離一定、背景ノイズゼロ
-- **データ量**: 最低50分、理想は90分以上（品質 > 量）
+- **データ量**: 最低50分、理想は90分以上（多ければ多いほどいい）
 - **エポック数**: validation lossがプラトーになったら早期停止（通常80-120エポック）
-- **ハードウェア**: RTX 3080以上推奨、VRAM不足なら batch_bins を半分に
+- **ハードウェア**: RTX 3080以上が推奨、VRAM不足なら batch_bins を半分に
 - **収録内容**: 日常会話、疑問文、感嘆文をバランスよく
 - **ピッチとトーン**: 普段の話し方を意識、感情を込めすぎない
 
@@ -473,7 +454,7 @@ print('Config available:', 'config' in model)
 ### 学習時間の目安
 - **データ準備**: 2-4時間（音声収録・編集含む）
 - **前処理**: 30分-1時間
-- **学習**: 12-24時間（RTX 3080で100エポック）
+- **学習**: 24-36時間（GTX1660Sで100エポック）
 - **テスト・調整**: 2-4時間
 
-**合計**: 2-3日の作業（GPUの性能による）
+**合計**: 2-3日の作業（いいGPU買え）
