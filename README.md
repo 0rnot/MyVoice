@@ -28,7 +28,7 @@ b220da3c-4c23-11f0-99ea-0242ac1c000c/
 
 **モデルファイルダウンロード**: [MyVoice_MYCOEIROINK.tar.gz](https://github.com/0rnot/MyVoice/releases/download/v1.0/MyVoice_MYCOEIROINK.tar.gz) (約662MB)
 
-COEIROINKで俺の声を使う手順↓
+COEIROINKで使う手順↓
 
 ### 1. COEIROINKのインストール
 
