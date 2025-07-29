@@ -323,7 +323,7 @@ COEIROINKで使う手順↓
      --model_file exp/tts_train_mycoe/100epoch.pth \
      --output_dir temp_samples/sample1
    
-   echo "これは俺の声を学習したモデルです" | \
+   echo "これは私の声を学習したモデルです" | \
    espnet2-tts-inference \
      --model_file exp/tts_train_mycoe/100epoch.pth \
      --output_dir temp_samples/sample2
