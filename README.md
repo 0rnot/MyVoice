@@ -1,6 +1,6 @@
 ## 概要
 
-声帯が潰れたとき用のバックアップ
+俺の声帯が潰れたとき用のバックアップ
 
 ## ディレクトリ構造
 
@@ -24,11 +24,11 @@ b220da3c-4c23-11f0-99ea-0242ac1c000c/
 
 ## 使用方法
 
-声帯が潰れた俺へ、このリポジトリには俺の声で学習させた音声合成モデルの設定ファイルが入ってる。モデルファイル（.pthファイル）と音声サンプルは容量が大きすぎるから、以下のリンクからダウンロードして
+声帯の潰れた俺へ、このリポジトリには俺の声で学習させた音声合成モデルの設定ファイルが入ってる。モデルファイル（.pthファイル）と音声サンプルは容量が大きすぎるから、以下のリンクからダウンロードして
 
 **モデルファイルダウンロード**: [MyVoice_MYCOEIROINK.tar.gz](https://github.com/0rnot/MyVoice/releases/download/v1.0/MyVoice_MYCOEIROINK.tar.gz) (約662MB)
 
-COEIROINKで使う手順↓
+COEIROINKで俺の声を使う手順↓
 
 ### 1. COEIROINKのインストール
 
@@ -323,7 +323,7 @@ COEIROINKで使う手順↓
      --model_file exp/tts_train_mycoe/100epoch.pth \
      --output_dir temp_samples/sample1
    
-   echo "これは私の声を学習したモデルです" | \
+   echo "これは俺の声を学習したモデルです" | \
    espnet2-tts-inference \
      --model_file exp/tts_train_mycoe/100epoch.pth \
      --output_dir temp_samples/sample2
@@ -361,17 +361,17 @@ COEIROINKで使う手順↓
    echo "UUID: ${NEW_UUID}"
    ```
 
-### 重要ポイント
+### 学習のコツと重要ポイント
 
 - **データ品質が全て**: ノイズ除去を徹底的に（Audacityでスペクトログラム確認推奨）
 - **収録環境**: 反響の少ない部屋、マイクとの距離一定、背景ノイズゼロ
 - **データ量**: 最低50分、理想は90分以上（多ければ多いほどいい）
 - **エポック数**: validation lossがプラトーになったら早期停止（通常80-120エポック）
-- **ハードウェア**: いいGPU買え、VRAM不足なら batch_bins を半分に
+- **ハードウェア**: RTX 3080以上が推奨、VRAM不足なら batch_bins を半分に
 - **収録内容**: 日常会話、疑問文、感嘆文をバランスよく
 - **ピッチとトーン**: 普段の話し方を意識、感情を込めすぎない
 
-### トラブルシューティング
+### 詳細なトラブルシューティング
 
 #### メモリ関連エラー
 ```bash
@@ -425,7 +425,7 @@ print(f'Phonemes: {phonemes}')
 "
 ```
 
-#### 学習が進まない
+#### 学習が進まない場合
 ```bash
 # 学習率の調整
 # conf/tuning/finetune_vits.yaml
