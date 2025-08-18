@@ -34,8 +34,10 @@ fi
 # Set git remote URL with token
 git remote set-url origin https://0rnot:${GITHUB_TOKEN}@github.com/0rnot/MyVoice.git
 
-# Add all changes (respecting .gitignore) - 機密情報フィルタリング
-git add . 2>&1 | grep -v "password\|token\|key\|credential" | tee -a "$LOG_FILE"
+# Add all changes (respecting .gitignore)
+if ! git add . 2>&1 | grep -v "password\|token\|key\|credential" | tee -a "$LOG_FILE"; then
+    log_message "DEBUG: git add completed (filtered output may be empty)"
+fi
 
 # Check if there are staged changes
 if git diff --cached --quiet; then
@@ -62,11 +64,11 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
     COMMIT_ARGS=""
 fi
 
-# Commit changes - 機密情報フィルタリング
-if git commit $COMMIT_ARGS -m "$COMMIT_MSG" 2>&1 | grep -v "password\|token\|key\|credential" | tee -a "$LOG_FILE"; then
+# Commit changes
+if git commit $COMMIT_ARGS -m "$COMMIT_MSG"; then
     log_message "Successfully committed changes"
     
-    # Push to remote repository - 機密情報フィルタリング
+    # Push to remote repository
     if git push origin master 2>&1 | grep -v "password\|token\|key\|credential" | tee -a "$LOG_FILE"; then
         log_message "Successfully pushed to GitHub"
     else
