@@ -339,7 +339,7 @@ COEIROINKで俺の声を使う手順↓
    cp temp_samples/sample3/norm/speech.wav coeiroink_model/${NEW_UUID}/voice_samples/224757969_003.wav
    ```
 
-4. **アイコンとポートレート画像の配置**
+4. **アイコンとポートレート画像の配置(無くていい)**
    ```bash
    # デフォルト画像をコピー
    # 256x256のアイコン画像
